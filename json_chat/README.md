@@ -14,11 +14,24 @@ quantisized model that runs in 20GB VRAM.
 This is only an example and will break with
 other models and in other applications.
 
+The UI is provided by chainlit.
+
 ### Installing
 
 TODO: Add docker-compose and Dockerfile here.
 
-The UI is provided by chainlit.
+The app will access ollama models at:
+`http://ollama:11434`
+
+Ollama needs to pull and start the:
+`dolphin-mixtral:8x7b-v2.7-q3_K_L`
+(or any comparable) model.
+
+It will access a SearxNG instance at:
+`http://searxng:8080`
+
+Those two servers should be setup by the docker-compose (TODO).
+
 After installing the requirements:
 
 ```
