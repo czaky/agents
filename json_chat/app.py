@@ -41,9 +41,7 @@ MODEL = "dolphin-mixtral:8x7b-v2.7-q3_K_L"
 
 SYSTEM_PROMPT = """
 You are a question answering assistant using tools to help answer my questions.
-"""
 
-HUMAN_PROMPT = """
 TOOLS
 ------
 You have access to the following tools:
@@ -76,7 +74,9 @@ Markdown code snippet formatted in the following schema:
     "action_input": string // The valid input to the action.
 }}
 ```
+"""
 
+HUMAN_PROMPT = """
 USER'S INPUT
 --------------------
 {input}
@@ -85,12 +85,9 @@ USER'S INPUT
 """
 
 TEMPLATE_TOOL_RESPONSE = """
-TOOL_RESPONSE: 
+TOOL RESPONSE: 
 ---------------------
-The tool response is:
-```
 {observation}
-```
 
 USER'S INPUT
 --------------------
@@ -155,6 +152,13 @@ async def on_chat_start():
         # DuckDuckGoSearchRun(),
         SearxSearchRun(
             wrapper=SearxSearchWrapper(searx_host="http://searxng:8080", unsecure=True)
+        ),
+        SearxSearchRun(
+            name="searx_news",
+            wrapper=SearxSearchWrapper(
+                searx_host="http://searxng:8080", categories=["news"], unsecure=True
+            ),
+            description="Use this to search for latest news.",
         ),
         PythonREPLTool(
             description="Use this to execute valid python code. Code needs to end with `print($RESULT)`.",

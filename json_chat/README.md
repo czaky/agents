@@ -1,6 +1,6 @@
 # JSON chat agent using dolphin-mixtral:8x7b-v2.7-q3_K_L
 
-The agent uses sevaral tools and communicates
+The agent uses several tools and communicates
 with LangChain agent executor using JSON.
 
 The following are the available tools:
@@ -9,7 +9,7 @@ pub_med, searx_search, Python_REPL.
 
 The prompts have been optimized for:
 `dolphin-mixtral-8x7b-Q3`
-quantisized model that runs in 20GB VRAM.
+quantized model that runs in 20GB VRAM.
 
 This is only an example and will break with
 other models and in other applications.
