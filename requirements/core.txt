@@ -1,0 +1,17 @@
+matplotlib
+jupyterlab
+scipy
+scikit-learn
+scikit-image
+pandas
+music21
+black[jupyter]
+click
+flake8
+kaggle
+pydot
+pylint
+ipywidgets
+flake8-nb
+swig
+

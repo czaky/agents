@@ -1,0 +1,23 @@
+-f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+jax[cuda11_local]
+jaxlib
+cached-property
+chex
+dm-tree
+etils
+clu @ git+https://github.com/google/CommonLoopUtils.git
+exceptiongroup
+flax
+iniconfig
+jax-jumpy
+msgpack
+opt-einsum
+optax
+orbax-checkpoint
+orbax-export
+pluggy
+pytest
+scipy
+tomli
+toolz
+

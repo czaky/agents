@@ -1,0 +1,13 @@
+alembic
+bottle
+cmaes
+colorlog
+greenlet
+joblib
+mako
+optuna-dashboard
+optuna
+scikit-learn
+scipy
+sqlalchemy
+threadpoolctl

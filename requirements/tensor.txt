@@ -1,0 +1,8 @@
+tensorflow[and-cuda]
+tensorrt
+tensorboard-data-server
+tensorboard-plugin-wit
+tensorboard
+tensorflow_probability
+tensorstore
+tensorflow_datasets

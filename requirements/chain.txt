@@ -1,0 +1,17 @@
+chainlit
+langchain
+openai
+chromadb
+langchain
+BeautifulSoup4
+langchainhub
+pypdf
+chainlit
+langchain-community
+langchain-experimental
+wikipedia
+duckduckgo-search
+xmltodict
+arxiv
+numexpr
+semanticscholar

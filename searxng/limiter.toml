@@ -1,0 +1,15 @@
+# This configuration file updates the default configuration file
+# See https://github.com/searxng/searxng/blob/master/searx/botdetection/limiter.toml
+
+[botdetection.ip_limit]
+# activate link_token method in the ip_limit method
+link_token = true
+
+[botdetection.ip_lists]
+
+pass_ip = [
+    '192.168.0.0/16',      # IPv4 private network
+    'fe80::/10'            # IPv6 linklocal / wins over botdetection.ip_limit.filter_link_local
+]
+
+pass_searxng_org = true

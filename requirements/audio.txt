@@ -1,0 +1,7 @@
+transformers
+accelerate
+optimum
+nltk
+sentencepiece
+datasets[all]
+

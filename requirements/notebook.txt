@@ -1,0 +1,7 @@
+notebook
+jupyter-lsp
+pyright
+python-language-server[all]
+jupyterlab-code-formatter
+black
+isort
