@@ -24,4 +24,4 @@ jobs:
         echo "PYTHONPATH=`pwd`" >> "$GITHUB_ENV"
     - name: Analyzing the code with pylint
       run: |
-        python -m pylint $(git ls-files '*.py')
+        python -m pylint $(git ls-files '**/*.py')
