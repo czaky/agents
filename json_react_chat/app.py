@@ -1,4 +1,4 @@
-"LangChain app using tools."
+"LangChain react agent with custome executor using tools."
 
 from typing import Sequence, Optional
 from datetime import datetime, timedelta
@@ -28,10 +28,6 @@ from langchain.tools.render import render_text_description
 import chainlit as cl
 from chainlit.playground.config import add_llm_provider
 from chainlit.playground.providers.langchain import LangchainGenericProvider
-
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # from langchain.globals import set_verbose, set_debug
 # set_verbose(True)

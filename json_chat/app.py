@@ -1,38 +1,36 @@
 "LangChain app using tools."
 
+from typing import Sequence, Optional
+from datetime import datetime, timedelta
+
 from langchain_community.chat_models import ChatOllama
-from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_community.tools import WikipediaQueryRun
 from langchain_community.tools.arxiv.tool import ArxivQueryRun
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
 from langchain_community.tools.searx_search.tool import SearxSearchRun
 from langchain_community.tools.semanticscholar.tool import SemanticScholarQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
+from langchain_groq import ChatGroq
 from langchain_community.utilities.searx_search import SearxSearchWrapper
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.prompts.chat import ChatPromptTemplate
-from langchain_core.runnables import Runnable, RunnablePassthrough
-from langchain_core.tools import BaseTool
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.tools import BaseTool, tool
 from langchain_experimental.tools import PythonREPLTool
-from langchain.agents import AgentExecutor
-from langchain.agents.agent import BaseSingleActionAgent, BaseMultiActionAgent
+from langchain.agents import AgentExecutor, Tool
 from langchain.agents.format_scratchpad import format_log_to_messages
 from langchain.agents.json_chat.prompt import TEMPLATE_TOOL_RESPONSE
 from langchain.agents.output_parsers import JSONAgentOutputParser
-from langchain.globals import set_verbose, set_debug
+from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.tools.render import render_text_description
-from typing import Sequence
 
 import chainlit as cl
 from chainlit.playground.config import add_llm_provider
 from chainlit.playground.providers.langchain import LangchainGenericProvider
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
+# from langchain.globals import set_verbose, set_debug
 # set_verbose(True)
 # set_debug(True)
 
@@ -40,7 +38,8 @@ load_dotenv()
 MODEL = "dolphin-mixtral:8x7b-v2.7-q3_K_L"
 
 SYSTEM_PROMPT = """
-You are a question answering assistant using tools to help answer my questions.
+You are a question answering assistant using tool actions \
+to respond to user comments.
 
 TOOLS
 ------
@@ -51,48 +50,66 @@ You have access to the following tools:
 RESPONSE FORMAT INSTRUCTIONS
 ----------------------------
 
-When responding use one of the two formats:
+When responding use one of the three formats:
 
 **Format 1:**
 Use this response format if you know the answer and want to respond directly. 
+Do NOT escape underscores. Use exact character case.
 Markdown code snippet formatted in the following schema:
 
 ```json
 {{
     "action": "Final Answer",
-    "action_input": string // You should put what you want to return here.
-}}
+    "action_input": string // [Not null] You should put what you want to return here. Escape parentheses.
 ```
 
 **Format 2:**
-Use this response format if you need to use a tool to find the answer.
+Use this response format if you cannot find the answer. 
+Do NOT escape underscores. Use exact character case.
 Markdown code snippet formatted in the following schema:
 
 ```json
 {{
-    "action": string, // The action to take. Must be one of: {tool_names}
-    "action_input": string // The valid input to the action.
+    "action": "Final Answer",
+    "action_input": string // [Not null] Explain why you don't know. Escape parentheses.
 }}
 ```
+
+**Format 3:**
+Use this response format if you need to use a tool action to find the answer.
+Do NOT escape underscores. Use exact character case.
+Markdown code snippet formatted in the following schema:
+
+```json
+{{
+    "action": string, // [Not null] Must be exactly one of: {tool_names}
+    "action_input": string // [Not null] A valid and unique input to the tool. Escape parentheses.
+}}
+```
+
+-------------------------------------
+(The json blob contain exactly: an `action` and `action_input`.)
+(Do NOT escape underscores. Use exact character case.)
+(Respond with a markdown code snippet of a json blob with a single action, and NOTHING else.)
 """
 
 HUMAN_PROMPT = """
-USER'S INPUT
---------------------
+User comment: 
 {input}
 
+--------------------------------------
+(The json blob contain exactly: an `action` and `action_input`.)
+(Do NOT escape underscores. Use exact character case.)
 (Respond with a markdown code snippet of a json blob with a single action, and NOTHING else.)
 """
 
 TEMPLATE_TOOL_RESPONSE = """
-TOOL RESPONSE: 
----------------------
+Tool response: 
 {observation}
 
-USER'S INPUT
---------------------
-What is the response to my last comment?
-Use the response from the tool to generate the answer without mentioning the tool name! 
+--------------------------------------
+(The json blob contain exactly: an `action` and `action_input`.)
+(Do NOT escape underscores. Use exact character case.)
 (Respond with a markdown code snippet of a json blob with a single action, and NOTHING else.)
 """
 
@@ -120,8 +137,32 @@ def create_json_chat_agent(
     return agent
 
 
+def int_or_none(s: str) -> Optional[int]:
+    try:
+        return int(s)
+    except ValueError:
+        return None
+
+
+@tool("current_date")
+def current_date(day: str = "now") -> str:
+    "Use this to get the current date or current year. [use 'now' for input]."
+    date = datetime.now()
+    if day.lower() == "yesterday":
+        date -= timedelta(days=1)
+        return "Yesterday was: " + date.strftime("%A %Y-%m-%d")
+    if day.lower() == "tomorrow":
+        date += timedelta(days=1)
+        return "Tomorrow is: " + date.strftime("%A %Y-%m-%d")
+    if delta := int_or_none(day):
+        date += timedelta(days=delta)
+        return date.strftime("%Y-%m-%d")
+    return "Current date is: " + date.strftime("%A %Y-%m-%d")
+
+
 @cl.on_chat_start
 async def on_chat_start():
+    print("----------------------------------------------------------")
     llm = ChatOllama(
         model=MODEL,
         temperature=1,
@@ -129,41 +170,31 @@ async def on_chat_start():
         format="json",
         base_url="http://ollama:11434",
     )
+    # llm = ChatGroq(model_name="mixtral-8x7b-32768")
 
-    # Add the LLM provider
+    # Add the LLM provider to debug prompts.
     add_llm_provider(
         LangchainGenericProvider(
-            # It is important that the id of the provider matches the _llm_type
             id=llm._llm_type,
-            # The name is not important. It will be displayed in the UI.
-            name="dolphin-mixtral",
-            # This should always be a Langchain llm instance (correctly configured)
+            name="mixtral",
             llm=llm,
-            # If the LLM works with messages, set this to True
             is_chat=True,
         )
     )
 
     tools = [
+        current_date,
         WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper()),
         ArxivQueryRun(),
         SemanticScholarQueryRun(),
         PubmedQueryRun(),
-        # DuckDuckGoSearchRun(),
         SearxSearchRun(
             wrapper=SearxSearchWrapper(searx_host="http://searxng:8080", unsecure=True)
         ),
-        SearxSearchRun(
-            name="searx_news",
-            wrapper=SearxSearchWrapper(
-                searx_host="http://searxng:8080", categories=["news"], unsecure=True
-            ),
-            description="Use this to search for latest news.",
-        ),
-        PythonREPLTool(
-            description="Use this to execute valid python code. Code needs to end with `print($RESULT)`.",
-            # return_direct=True,
-        ),
+        # PythonREPLTool(
+        #    description="Use this if you need to execute valid python code. Code needs to end with `print($RESULT)`.",
+        #    # return_direct=True,
+        # ),
     ]
 
     prompt = ChatPromptTemplate.from_messages(
@@ -176,14 +207,14 @@ async def on_chat_start():
     )
 
     memory = ConversationBufferWindowMemory(
-        k=3, memory_key="chat_history", output_key="output", return_messages=True
+        k=5, memory_key="chat_history", output_key="output", return_messages=True
     )
 
     executor = AgentExecutor(
         agent=create_json_chat_agent(llm, tools, prompt),
         tools=tools,
         verbose=True,
-        max_iterations=3,
+        max_iterations=7,
         memory=memory,
         handle_parsing_errors=True,
         return_intermediate_steps=True,

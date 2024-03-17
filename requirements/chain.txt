@@ -9,6 +9,7 @@ pypdf
 chainlit
 langchain-community
 langchain-experimental
+langchain-groq
 wikipedia
 duckduckgo-search
 xmltodict
